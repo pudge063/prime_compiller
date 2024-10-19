@@ -226,12 +226,66 @@ class Lexer:
         Действительные числа: <числовая_сторка><порядок> | [<числовая_строка>].<число>[<порядок>]
 
         """
-        
+
         """
         Проверка на принадлежность к целым числам (integer).
+        Определение системы счисления (ns), типа токена (tt).
         """
-        
-        pass
+
+        tt = False
+        ns = False
+
+        p_count = 0
+        e_count = 0
+        E_count = 0
+
+        for _ in token:
+            if _ == ".":
+                if e_count > 0 or E_count > 0:
+                    return (4, "err", "err")
+                p_count += 1
+                if p_count > 1:
+                    return False
+            elif _ == "e":
+                e_count += 1
+            elif _ == "E":
+                E_count += 1
+
+        # print(p_count, e_count, E_count)
+
+        if e_count + e_count == 1 or p_count == 1:
+            tt = "float"
+            ns = "10"
+            return (4, token, ns, tt)
+
+        # if "." in token or ("e" in token and set(token[:-1]).intersection(self.vocabilary)):
+        #     pass
+
+        # print(set(token[:-1]))
+
+        if (token[-1] == "B" or token[-1] == "b") and not set(token[:-1]).intersection(
+            self.vocabilary
+        ):
+            ns = "2"
+        elif (token[-1] == "O" or token[-1] == "o") and not set(
+            token[:-1]
+        ).intersection(self.vocabilary):
+            ns = "8"
+        elif (token[-1] == "H" or token[-1] == "h") and not set(
+            token[:-2]
+        ).intersection(self.vocabilary):
+            ns = "16"
+        elif not set(token[:-1]).intersection(self.vocabilary) and len(token) > 1 or not set(token).intersection(self.vocabilary):
+            if token[-1] == "D" or token[-1] == "d":
+                token = token[:-1]
+            ns = "10"
+            tt = "int"
+            return (4, token, ns, tt)
+
+        tt = "int"
+        token = token[:-1]
+
+        return (4, token, ns, tt)
 
     def tokenize(self, file: str, debug: str = False) -> list[tuple]:
         """
@@ -294,6 +348,12 @@ class Lexer:
             Проверка на принадлежность к группе чисел (4). Определение системы счисления.
             """
 
+            token = Lexer.find_numbers(self, _)
+            # print(_, token)
+            if token[2]:
+                new_data.append(token)
+                continue
+
             # TODO Сделать проверку на 2, 8, 10 и 16 -ричные системы счисления, разделение на действительные и целые числа
 
             """
@@ -312,5 +372,7 @@ class Lexer:
                 continue
 
             new_data.append(("undefined", _))
+            
+            print(new_data)
 
         return new_data
