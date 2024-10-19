@@ -63,6 +63,7 @@ class Lexer:
             "y",
             "z",
             "_",
+            "E",
         ]
         self.numbers = [
             "1",
@@ -76,6 +77,8 @@ class Lexer:
             "9",
             "0",
         ]
+        self.float = ["e", "E", "+"]
+        self.int = ["h", "H", "d", "D", "b", "B", "a", "b", "c", "d", "e", "f", "A", "B", "C", "D", "E", "F"]
 
     def open_file(self, file: str) -> str:
         """
@@ -174,6 +177,129 @@ class Lexer:
         else:
             return False
 
+    def find_numbers(self, token: str) -> tuple[int, str] | bool:
+        """
+        Проверка токена на принадлежность к группе чисел (4).
+        Определение системы счисления.
+
+        Варианты чисел: двоичное (1), восьмеричное (2), десятеричное (3), шестнадцатиричное (4)
+        Действительные числа: <числовая_сторка><порядок> | [<числовая_строка>].<число>[<порядок>]
+
+        Определение системы счисления (ns), типа токена (tt).
+        """
+
+        """
+        Список того, что не может быть в числах: set(элементы чисел) - set(алфавит и прочие символы)
+        В float числах могут быть 0|1|2|3|4|5|6|7|8|9|0|e|E|.
+        В int числах могут быть 0|1|2|3|4|5|6|7|8|9|0|d|D|b|B|h|H
+        """
+
+        f_exceptions = set(self.vocabilary + [","]) - (set(self.numbers + self.float))
+        i_exceptions = set(self.vocabilary + list(self.separators)) - (set(self.numbers + self.int))
+        """
+        Пропуск случаев, когда в токене есть символы, которые не могут быть в числах
+        """        
+        if set(token).intersection(f_exceptions.intersection(i_exceptions)):
+            return (4, False, False)
+
+        tt = False
+        ns = False
+
+        """
+        Проверка на принадлежность к float числам. Нужно проверить, чтобы число подходило под правила:
+        <действительное>::=<числовая_строка><порядок>|[<числовая_строка>].<числовая_строка>[<порядок>]
+        <числовая_строка>::= {/ <цифра> /}
+        <порядок>::= (E|e)[+|-] <числовая_строка>
+        
+        Проверка, чтобы было не больше 1й точки в числе, чтобы не было букв в первой части,
+        чтобы не было больше 1й буквы e|E, вывод ошибки при наличии двух точек или если E стоит до точки.
+        """
+
+        p_count = 0
+        e_count = 0
+        E_count = 0
+
+        for _ in token:
+            if _ == ".":
+                if e_count > 0 or E_count > 0:
+                    return (5, "err", "err")
+                p_count += 1
+                if p_count > 1:
+                    return (5, "err", "err")
+            elif _ == "e":
+                e_count += 1
+            elif _ == "E":
+                E_count += 1
+
+        # print(p_count, e_count, E_count)
+
+        if (
+            "e" in token
+            and (token.index("e") == 0 or token.index("e") == len(token) - 1)
+            or "E" in token
+            and (token.index("E") == 0 or token.index("E") == len(token) - 1)
+        ):
+            return (5, "err", "err")
+
+        if (
+            e_count + E_count == 1
+            or p_count == 1
+            and e_count + E_count < 2
+            and token[-1] != "."
+            and token[-1] != "E"
+            and token[-1] != "e"
+        ):
+            tt = "float"
+            ns = "10"
+            return (4, token, ns, tt)
+        elif e_count + E_count > 1 and p_count == 1:
+            return (5, "err", "err")
+
+        # if "." in token or ("e" in token and set(token[:-1]).intersection(self.vocabilary)):
+        #     pass
+
+        # print(set(token[:-1]))
+
+        """
+        Работа с целыми числами (int). Выделение последнего символа токена, проверка на
+        принаждежность к двоичному, восьмеричному или шеснадцатеричному числу.
+        
+        Случаи 2, 8, 16 системы – конец токена равен B|b => 2, O|o => 8, H|h => 16.
+        Десятичное число, если в токене нет символов алфавита нетерминалов, последний символ может быть D|d|eps.
+        """
+
+        if (token[-1] == "B" or token[-1] == "b") and set(token[:-1]).intersection(
+            self.numbers
+        ):
+            ns = "2"
+        elif (token[-1] == "O" or token[-1] == "o") and not set(
+            token[:-1]
+        ).intersection(self.vocabilary):
+            ns = "8"
+        elif (token[-1] == "H" or token[-1] == "h") and not set(
+            token[:-2]
+        ).intersection(self.vocabilary):
+            ns = "16"
+        elif (
+            (
+                not set(token[:-1]).intersection(self.vocabilary)
+                and len(token) > 1
+                or not set(token).intersection(self.vocabilary)
+            )
+            and not set(token).intersection(["."])
+            and not (token[-1] == "E" or token[-1] == "e")
+        ):
+            if token[-1] == "D" or token[-1] == "d":
+                token = token[:-1]
+            ns = "10"
+            tt = "int"
+            return (4, token, ns, tt)
+
+        tt = "int"
+        token = token[:-1]
+
+        return (4, token, ns, tt)
+
     def find_identificators(self, token: str, identificators: list):
         """
         Проверка токена на принадлежность группе идентификаторов (3).
@@ -216,76 +342,6 @@ class Lexer:
         token_id = identificators.index(token)
 
         return (3, token_id), identificators
-
-    def find_numbers(self, token: str) -> tuple[int, str] | bool:
-        """
-        Проверка токена на принадлежность к группе чисел (4).
-        Определение системы счисления.
-
-        Варианты чисел: двоичное (1), восьмеричное (2), десятеричное (3), шестнадцатиричное (4)
-        Действительные числа: <числовая_сторка><порядок> | [<числовая_строка>].<число>[<порядок>]
-
-        """
-
-        """
-        Проверка на принадлежность к целым числам (integer).
-        Определение системы счисления (ns), типа токена (tt).
-        """
-
-        tt = False
-        ns = False
-
-        p_count = 0
-        e_count = 0
-        E_count = 0
-
-        for _ in token:
-            if _ == ".":
-                if e_count > 0 or E_count > 0:
-                    return (4, "err", "err")
-                p_count += 1
-                if p_count > 1:
-                    return False
-            elif _ == "e":
-                e_count += 1
-            elif _ == "E":
-                E_count += 1
-
-        # print(p_count, e_count, E_count)
-
-        if e_count + e_count == 1 or p_count == 1:
-            tt = "float"
-            ns = "10"
-            return (4, token, ns, tt)
-
-        # if "." in token or ("e" in token and set(token[:-1]).intersection(self.vocabilary)):
-        #     pass
-
-        # print(set(token[:-1]))
-
-        if (token[-1] == "B" or token[-1] == "b") and not set(token[:-1]).intersection(
-            self.vocabilary
-        ):
-            ns = "2"
-        elif (token[-1] == "O" or token[-1] == "o") and not set(
-            token[:-1]
-        ).intersection(self.vocabilary):
-            ns = "8"
-        elif (token[-1] == "H" or token[-1] == "h") and not set(
-            token[:-2]
-        ).intersection(self.vocabilary):
-            ns = "16"
-        elif not set(token[:-1]).intersection(self.vocabilary) and len(token) > 1 or not set(token).intersection(self.vocabilary):
-            if token[-1] == "D" or token[-1] == "d":
-                token = token[:-1]
-            ns = "10"
-            tt = "int"
-            return (4, token, ns, tt)
-
-        tt = "int"
-        token = token[:-1]
-
-        return (4, token, ns, tt)
 
     def tokenize(self, file: str, debug: str = False) -> list[tuple]:
         """
@@ -372,7 +428,7 @@ class Lexer:
                 continue
 
             new_data.append(("undefined", _))
-            
-            print(new_data)
+
+            # print(new_data)
 
         return new_data

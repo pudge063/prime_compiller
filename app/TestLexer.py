@@ -76,6 +76,12 @@ class TestLexer(unittest.TestCase):
                 (1, 3),
             ],
         )
+        
+    def test6(self):
+        self.assertEqual(
+            self.lexer.tokenize("3E.12 3..12d 4.55,12", True),
+            [(5, "err", "err"), (5, "err", "err"), ('undefined', '4.55,12')],
+        )
 
 
 if __name__ == "__main__":

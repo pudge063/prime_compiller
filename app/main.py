@@ -2,7 +2,7 @@ import la
 
 path = "examples"
 
-file = "test1.psuti"
+file = "all_errors.psuti"
 
 lexer = la.Lexer()
 
