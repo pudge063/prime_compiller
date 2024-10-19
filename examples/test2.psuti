@@ -1,0 +1,11 @@
+begin
+  var dim a, b #
+  var dim max #
+  enter a b
+  if a > b then
+    max assign a
+  else
+    max assign b
+  end
+  displ max
+end

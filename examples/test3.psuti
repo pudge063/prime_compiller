@@ -1,0 +1,9 @@
+begin
+  var dim i, n #
+  var dim sum #
+  sum assign 0
+  enter n
+  for i assign 1 val n do
+    sum assign sum + i
+  displ sum
+end

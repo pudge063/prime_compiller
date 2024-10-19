@@ -1,0 +1,7 @@
+begin
+  var dim a, b #
+  var dim result &
+  enter a b
+  result assign (a > b) && (a != 0)
+  displ result
+end

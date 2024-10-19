@@ -1,0 +1,12 @@
+begin
+  var dim i, x #
+  var dim fact #
+  fact assign 1
+  i assign 1
+  enter x
+  while i <= x do
+    fact assign fact * i
+    i assign i + 1
+  next
+  displ fact
+end
