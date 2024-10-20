@@ -1,0 +1,9 @@
+begin;
+    (* тело программы *)
+    var dim x, y #;
+    x assign 2;
+    y assign x * 2;
+
+    (* вывод результата *)
+    displ y;
+end

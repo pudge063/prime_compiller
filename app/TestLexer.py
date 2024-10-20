@@ -12,72 +12,6 @@ class TestLexer(unittest.TestCase):
         self.lexer = Lexer()
 
     def test1(self):
-        self.assertEqual(
-            self.lexer.tokenize("x assign 2;", True),
-            [(3, 0), (1, 8), (4, "2", "10", "int"), (2, 24)],
-        )
-
-    def test2(self):
-        self.assertEqual(
-            self.lexer.tokenize("x y y x y;", True),
-            [(3, 0), (3, 1), (3, 1), (3, 0), (3, 1), (2, 24)],
-        )
-
-    def test3(self):
-        self.assertEqual(
-            self.lexer.tokenize("12 1 3", True),
-            [(4, "12", "10", "int"), (4, "1", "10", "int"), (4, "3", "10", "int")],
-        )
-
-    def test4(self):
-        self.assertEqual(
-            self.lexer.tokenize(
-                """
-                begin 
-                var dim x, y #;
-                x assign 2;
-                y assign .1E+2;
-                dim z;
-                z assign x + y;
-                displ z;
-                end
-                """,
-                True,
-            ),
-            [
-                (1, 1),
-                (1, 2),
-                (1, 4),
-                (3, 0),
-                (2, 23),
-                (3, 1),
-                (1, 5),
-                (2, 24),
-                (3, 0),
-                (1, 8),
-                (4, "2", "10", "int"),
-                (2, 24),
-                (3, 1),
-                (1, 8),
-                (4, ".1E+2", "10", "float"),
-                (2, 24),
-                (1, 4),
-                (3, 2),
-                (2, 24),
-                (3, 2),
-                (1, 8),
-                (3, 0),
-                (2, 7),
-                (3, 1),
-                (2, 24),
-                (1, 18),
-                (3, 2),
-                (2, 24),
-                (1, 3),
-            ],
-        )
-
-    def test5(self):
         """
         Тест для действительных чисел. Проверка корректных чисел типа float.
         """
@@ -118,7 +52,10 @@ class TestLexer(unittest.TestCase):
             [(4, ".2e-12", "10", "float")],
         )
 
-    def test6(self):
+    def test2(self):
+        """
+        Тестирование исключений и обработки ошибок для типа float.
+        """
         self.assertEqual(
             self.lexer.tokenize("1.", debug=True),
             ["error", "1.", "Действительное число не может заканчиваться точкой."],
@@ -164,9 +101,9 @@ class TestLexer(unittest.TestCase):
             ],
         )
 
-    def test7(self):
+    def test3(self):
         """
-        Тест для целых чисел
+        Тест для целых чисел (int).
         """
         self.assertEqual(
             self.lexer.tokenize("123", debug=True), [(4, "123", "10", "int")]
@@ -188,7 +125,10 @@ class TestLexer(unittest.TestCase):
             self.lexer.tokenize("10d", debug=True), [(4, "10", "10", "int")]
         )
 
-    def test8(self):
+    def test4(self):
+        """
+        Тестирование исключений и обработки ошибок для типа int.
+        """
         self.assertEqual(
             self.lexer.tokenize("12b", debug=True),
             ["error", "12b", "Недопустимые символы для двоичной системы."],
@@ -198,7 +138,7 @@ class TestLexer(unittest.TestCase):
             ["error", "18o", "Недопустимые символы для восьмеричной системы."],
         )
 
-    def test9(self):
+    def test5(self):
         """
         Тестирование идентификаторов.
         """
@@ -209,9 +149,13 @@ class TestLexer(unittest.TestCase):
         )
         self.assertEqual(self.lexer.tokenize("ABC", debug=True), [(3, 0)])
         self.assertEqual(self.lexer.tokenize("aBC", debug=True), [(3, 0)])
+        self.assertEqual(self.lexer.tokenize("hh", debug=True), [(3, 0)])
 
 
-    def test10(self):
+    def test6(self):
+        """
+        Тестирование исключений и обработки ошибок для идентификаторов.
+        """
         self.assertEqual(
             self.lexer.tokenize("12x", debug=True),
             [

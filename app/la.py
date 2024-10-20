@@ -273,20 +273,26 @@ class Lexer:
         Токен принадлежит к целым числам, если его символы входят в числа и в числа и спецсимволы int:
         b|B - двоичная, o|O - восьмеричная, h|H - шестнадцатеричная, d|D|eps - десячичная система
         
+        Первый символ всегда цифра, последний - b|o|h|d|B|O|H|D|eps, 
+        в середине цифры и символы в зависимости от системы счисления
+        
         В двоичной системе могут быть только числа 0|1
         В восьмеричной могут быть числа 0|1|2|3|4|5|6|7
         В шестнадцатеричной могут быть числа 0|1|2|3|4|5|6|7|8|9|0 и символы A|B|C|D|E|F|a|b|c|d|e|f
         """
 
         if (
-            is_sublist(self.float + self.numbers, set(token))
+            (token[0] == "." or token[0] in self.numbers)
+            and is_sublist(self.float + self.numbers, set(token))
             and not set(token).intersection(f_exceptions)
             and set(token).intersection(["e", "E", "."])
         ):
             tt = "float"
-        elif set(token).intersection(self.int + self.numbers) and not set(
-            token
-        ).intersection(i_exceptions):
+        elif (
+            set(token).intersection(self.int + self.numbers)
+            and not set(token).intersection(i_exceptions)
+            and token[0] in self.numbers
+        ):
             tt = "int"
         else:
             return token, "Skip"
@@ -315,8 +321,6 @@ class Lexer:
 
             """
             Поиск всех возможных ошибок в действительном числе.
-            1. Точка не может стоять в конце числа float, после точки обязательно должна быть числовая строка.
-            2. Порядок обя
             """
 
             if "." == token[-1]:
@@ -425,8 +429,6 @@ class Lexer:
         """
 
         if tt == "int":
-            if set(token).intersection(i_exceptions):
-                return (4, False, False), "Skip"
             if token[-1] == "B" or token[-1] == "b":
                 if is_sublist(self.numbers[:2], token[:-1]):
                     ns = "2"
@@ -538,7 +540,7 @@ class Lexer:
                 "Error",
             )
 
-        if not is_sublist(self.vocabilary, set(token)):
+        if not is_sublist(self.vocabilary + self.numbers, set(token)):
             return (token, "Неизвестные символы в идентификаторе."), False, "Error"
 
         if not token in identificators:
