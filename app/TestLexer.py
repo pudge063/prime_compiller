@@ -85,12 +85,8 @@ class TestLexer(unittest.TestCase):
             ["error", "1.1E+1+1", "Лишний знак + или - в токене типа float."],
         )
         self.assertEqual(
-            self.lexer.tokenize("E1", debug=True),
-            ["error", "E1", "Порядок не может находиться в конце или в начале числа."],
-        )
-        self.assertEqual(
             self.lexer.tokenize("1E", debug=True),
-            ["error", "1E", "Порядок не может находиться в конце или в начале числа."],
+            ["error", "1E", "Порядок не может находиться в конце числа."],
         )
         self.assertEqual(
             self.lexer.tokenize("1.2Ee23", debug=True),
@@ -150,6 +146,8 @@ class TestLexer(unittest.TestCase):
         self.assertEqual(self.lexer.tokenize("ABC", debug=True), [(3, 0)])
         self.assertEqual(self.lexer.tokenize("aBC", debug=True), [(3, 0)])
         self.assertEqual(self.lexer.tokenize("hh", debug=True), [(3, 0)])
+        self.assertEqual(self.lexer.tokenize("h12b", debug=True), [(3, 0)])
+        self.assertEqual(self.lexer.tokenize("a212gfh", debug=True), [(3, 0)])
 
 
     def test6(self):

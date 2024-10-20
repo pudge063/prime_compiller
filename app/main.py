@@ -1,8 +1,8 @@
 import la
 
-path = "tests"
+path = "examples"
 
-file = "identificators.psuti"
+file = "example1.psuti"
 
 lexer = la.Lexer()
 

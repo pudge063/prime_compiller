@@ -389,13 +389,13 @@ class Lexer:
 
             if (
                 "e" in token
-                and (token.index("e") == 0 or token.index("e") == len(token) - 1)
+                and (token.index("e") == len(token) - 1)
                 or "E" in token
-                and (token.index("E") == 0 or token.index("E") == len(token) - 1)
+                and (token.index("E") == len(token) - 1)
             ):
                 return (
                     token,
-                    "Порядок не может находиться в конце или в начале числа.",
+                    "Порядок не может находиться в конце числа.",
                 ), "Error"
 
             if (
@@ -549,6 +549,14 @@ class Lexer:
 
         return (3, token_id), identificators, "Pass"
 
+    def write_tokens_to_file(self, file: str, data: list[tuple]) -> bool:
+        """
+        Функция для записи набора полученных токенов в файл.
+        """
+        with open(file, "w") as f:
+            f.write(data)
+        return True
+
     def tokenize(self, file: str, debug: str = False) -> list[tuple]:
         """
         Основная функция лексического анализатора.
@@ -629,8 +637,6 @@ class Lexer:
                 continue
                 # return 0
 
-            # TODO Сделать проверку на 2, 8, 10 и 16 -ричные системы счисления, разделение на действительные и целые числа
-
             """
             Проверка на принадлежность токена к группе идентификаторов (3).
             """
@@ -655,4 +661,5 @@ class Lexer:
 
             # print(new_data)
 
+        # Lexer.write_tokens_to_file(self, "results/test.psuti", str(new_data))
         return new_data
