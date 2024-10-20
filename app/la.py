@@ -63,20 +63,32 @@ class Lexer:
             "y",
             "z",
             "_",
+            "A",
+            "B",
+            "C",
+            "D",
             "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "G",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "R",
+            "S",
+            "T",
+            "U",
+            "W",
+            "X",
+            "Y",
+            "Z",
         ]
-        self.numbers = [
-            "1",
-            "2",
-            "3",
-            "4",
-            "5",
-            "6",
-            "7",
-            "8",
-            "9",
-            "0",
-        ]
+        self.numbers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         self.float = ["e", "E", "+", "-", "."]
         self.int = [
             "h",
@@ -85,6 +97,8 @@ class Lexer:
             "D",
             "b",
             "B",
+            "o",
+            "O",
             "a",
             "b",
             "c",
@@ -216,32 +230,66 @@ class Lexer:
         i_exceptions - исключения для int чисел (набор символов, которые не могут быть в действительном числе)
         """
 
+        def is_sublist(main: list | dict | set, sub: list | dict | set):
+            """
+            Функция для проверки вхождения одного набора данных в другой.
+            Пример:
+            Вход: main = [1, 2, 3], sub = [1, 2]
+            Вывод: True
+            """
+            for _ in sub:
+                if not _ in main:
+                    return False
+            return True
+
         f_exceptions = set(self.vocabilary + [","]) - (set(self.numbers + self.float))
         i_exceptions = set(self.vocabilary + list(self.separators)) - (
             set(self.numbers + self.int)
         )
+
         """
         Пропуск случаев, когда в токене есть символы, которые не могут быть в числах
         """
         if set(token).intersection(f_exceptions.intersection(i_exceptions)):
-            return None, "Skip"
+            return token, "Skip"
 
         tt = None  # тип токена
         ns = None  # система счисления
 
         """
         Разделение на int и float
+        
+        Правила для float:
+        Токен принадлежит к действительным числам, если его символы входят в числа и спецсимволы float (+, -, e, E, .),
+        при этом обязательно должна быть либо точка, либо e | E (в единственном экземпляре).
+        
+        Плюс и минус - знак порядка, может либо отсутствовать, либо присутствовать. Знак может быть только после E | eps.
+        
+        Точка может быть в начале числа, тогда подразумевается, что целая часть равна 0, после точки обязательно должна быть
+        числовая строка. Указание порядка не обязательно, если есть точка.
+        
+        
+        Правила для int:
+        Токен принадлежит к целым числам, если его символы входят в числа и в числа и спецсимволы int:
+        b|B - двоичная, o|O - восьмеричная, h|H - шестнадцатеричная, d|D|eps - десячичная система
+        
+        В двоичной системе могут быть только числа 0|1
+        В восьмеричной могут быть числа 0|1|2|3|4|5|6|7
+        В шестнадцатеричной могут быть числа 0|1|2|3|4|5|6|7|8|9|0 и символы A|B|C|D|E|F|a|b|c|d|e|f
         """
-        if set(token).intersection(self.float + self.numbers) and not set(
-            token
-        ).intersection(f_exceptions) and (set(token).intersection(["e", "E"]) or "." in token):
+
+        if (
+            is_sublist(self.float + self.numbers, set(token))
+            and not set(token).intersection(f_exceptions)
+            and set(token).intersection(["e", "E", "."])
+        ):
             tt = "float"
         elif set(token).intersection(self.int + self.numbers) and not set(
             token
         ).intersection(i_exceptions):
             tt = "int"
         else:
-            return (token), "Skip"
+            return token, "Skip"
         # print(token, tt)
 
         """
@@ -265,6 +313,29 @@ class Lexer:
             # print(f_exceptions)
             # print(i_exceptions)
 
+            """
+            Поиск всех возможных ошибок в действительном числе.
+            1. Точка не может стоять в конце числа float, после точки обязательно должна быть числовая строка.
+            2. Порядок обя
+            """
+
+            if "." == token[-1]:
+                return (
+                    token,
+                    "Действительное число не может заканчиваться точкой.",
+                ), "Error"
+
+            if "." in token and (
+                ("e" in token)
+                and list(token).index("e") < list(token).index(".")
+                or ("E" in token)
+                and list(token).index("E") < list(token).index(".")
+            ):
+                return (
+                    token,
+                    "В действительном числе точка не может стоять после порядка.",
+                ), "Error"
+
             for _ in token:
                 if _ == ".":
                     if p_count == 1:
@@ -272,23 +343,33 @@ class Lexer:
                             token,
                             "В действительном числе не может быть более одной точки.",
                         ), "Error"
-                    if e_count > 0 or E_count > 0:
-                        return (
-                            token,
-                            "В действительном числе точка не может стоять до порядка.",
-                        ), "Error"
                     p_count += 1
                 elif p_count == 1 and _ in self.numbers:
                     num_after_point = True
                 if _ in ["e", "E"]:
-                    if num_after_point == False:
-                        return (token, "Сразу после точки не может идти порядок."), "Error"
+                    if num_after_point == False and "." in token:
+                        return (
+                            token,
+                            "Сразу после точки не может идти порядок.",
+                        ), "Error"
                     elif _ == "e":
                         e_count += 1
                     elif _ == "E":
                         E_count += 1
-                elif _ == "+" and plus_count > 0 or _ == "-" and minus_count > 0:
-                    return (token, "Лишний знак + или - в токене типа float."), "Error"
+                elif _ == "+":
+                    plus_count += 1
+                    if plus_count > 1:
+                        return (
+                            token,
+                            "Лишний знак + или - в токене типа float.",
+                        ), "Error"
+                elif _ == "-":
+                    minus_count += 1
+                    if minus_count > 1:
+                        return (
+                            token,
+                            "Лишний знак + или - в токене типа float.",
+                        ), "Error"
                 elif (_ == "+" or _ == "-") and (e_count == 0 and E_count == 0):
                     return (
                         token,
@@ -297,7 +378,10 @@ class Lexer:
                 elif _ in f_exceptions:
                     return token, "Skip"
 
-            # print(p_count, e_count, E_count)
+            # print(p_count, e_count, E_count, plus_count, minus_count)
+
+            if p_count == 0 and e_count + E_count > 1:
+                return token, "Skip"
 
             if (
                 "e" in token
@@ -323,8 +407,8 @@ class Lexer:
                 return (4, token, ns, tt), "Pass"
             elif e_count + E_count > 1 and p_count == 1:
                 return (
-                    5,
-                    "В действительном числе порядок не может быть указан более одного раза",
+                    token,
+                    "В действительном числе порядок не может быть указан более одного раза.",
                 ), "Error"
 
             # if "." in token or ("e" in token and set(token[:-1]).intersection(self.vocabilary)):
@@ -342,19 +426,38 @@ class Lexer:
 
         if tt == "int":
             if set(token).intersection(i_exceptions):
-                return (4, False, False), "Pass"
-            if (token[-1] == "B" or token[-1] == "b") and set(token[:-1]).intersection(
-                self.numbers
-            ):
-                ns = "2"
-            elif (token[-1] == "O" or token[-1] == "o") and not set(
-                token[:-1]
-            ).intersection(self.vocabilary):
-                ns = "8"
-            elif (token[-1] == "H" or token[-1] == "h") and not set(
-                token[:-2]
-            ).intersection(self.vocabilary):
-                ns = "16"
+                return (4, False, False), "Skip"
+            if token[-1] == "B" or token[-1] == "b":
+                if is_sublist(self.numbers[:2], token[:-1]):
+                    ns = "2"
+                    token = token[:-1]
+                    return (4, token, ns, tt), "Pass"
+                elif set(token[:-1]).intersection(self.vocabilary):
+                    return (token), "Skip"
+                else:
+                    return (
+                        token,
+                        "Недопустимые символы для двоичной системы.",
+                    ), "Error"
+            elif token[-1] == "O" or token[-1] == "o":
+                if is_sublist((self.numbers[:8]), set(token[:-1])):
+                    ns = "8"
+                    token = token[:-1]
+                    return (4, token, ns, tt), "Pass"
+                elif is_sublist((self.numbers[:]), set(token[:-1])):
+                    return (
+                        token,
+                        "Недопустимые символы для восьмеричной системы.",
+                    ), "Error"
+                else:
+                    return token, "Skip"
+            elif token[-1] == "H" or token[-1] == "h":
+                if is_sublist(self.numbers + self.int[8:], set(token[:-1])):
+                    if not token[0] in self.numbers:
+                        return (token), "Skip"
+                    ns = "16"
+                    token = token[:-1]
+                    return (4, token, ns, tt), "Pass"
             elif (
                 (
                     not set(token[:-1]).intersection(self.vocabilary)
@@ -366,14 +469,20 @@ class Lexer:
             ):
                 if token[-1] == "D" or token[-1] == "d":
                     token = token[:-1]
-                ns = "10"
-                tt = "int"
-                return (4, token, ns, tt), "Pass"
+                    ns = "10"
+                    return (4, token, ns, tt), "Pass"
+                elif str(token[-1]) in self.numbers:
+                    ns = "10"
+                    return (4, token, ns, tt), "Pass"
+                else:
+                    return token, "Skip"
+            else:
+                return token, "Skip"
 
-            tt = "int"
-            token = token[:-1]
+            # tt = "int"
+            # token = token[:-1]
 
-            return (4, token, ns, tt), "Pass"
+            # return (4, token, ns, tt), "Pass"
 
     def find_identificators(self, token: str, identificators: list):
         """
@@ -409,14 +518,34 @@ class Lexer:
         Шаг с токеном y на позиции 5: token = 'y', identificators = {'x': '1'}, возврат (3, 2)
         Шаг с токеном x на позиции 8: token = 'x', identificators = {'x': 1, 'y': 2}, возврат: (3, 1)
         """
-        if not set(token).intersection(self.vocabilary):
-            return False, False
+
+        def is_sublist(main: list | dict | set, sub: list | dict | set):
+            """
+            Функция для проверки вхождения одного набора данных в другой.
+            Пример:
+            Вход: main = [1, 2, 3], sub = [1, 2]
+            Вывод: True
+            """
+            for _ in sub:
+                if not _ in main:
+                    return False
+            return True
+
+        if token[0] in (set(self.numbers + list(self.separators))):
+            return (
+                (token, "Идентификатор не может начинаться с числа или разделителя."),
+                False,
+                "Error",
+            )
+
+        if not is_sublist(self.vocabilary, set(token)):
+            return (token, "Неизвестные символы в идентификаторе."), False, "Error"
 
         if not token in identificators:
             identificators.append(token)
         token_id = identificators.index(token)
 
-        return (3, token_id), identificators
+        return (3, token_id), identificators, "Pass"
 
     def tokenize(self, file: str, debug: str = False) -> list[tuple]:
         """
@@ -481,13 +610,21 @@ class Lexer:
 
             token, status = Lexer.find_numbers(self, _)
             # print(_, token)
-            if status == "Pass" and token[2]:
+            if status == "Pass" and token:
                 new_data.append(token)
                 continue
             elif status == "Skip":
+                """
+                Токен не является числом.
+                """
                 pass
             elif status == "Error":
+                """
+                Токен распознан как число, но содержит ошибку. Вывод ошибки.
+                """
                 print(f"Ошибка в токене {token[0]}, описание ошибки: {token[1]}")
+                return ["error", token[0], token[1]]
+                continue
                 # return 0
 
             # TODO Сделать проверку на 2, 8, 10 и 16 -ричные системы счисления, разделение на действительные и целые числа
@@ -495,11 +632,11 @@ class Lexer:
             """
             Проверка на принадлежность токена к группе идентификаторов (3).
             """
-            token, new_identificators = Lexer.find_identificators(
+            token, new_identificators, status = Lexer.find_identificators(
                 self, _, identificators
             )
 
-            if token:
+            if token and status == "Pass":
                 # print(_)
                 # print(3, token)
                 new_data.append(token)
@@ -507,8 +644,12 @@ class Lexer:
                     new_identificators if new_identificators else identificators
                 )
                 continue
+            elif status == "Error":
+                print(f"Ошибка в токене {token[0]}, описание ошибки: {token[1]}.")
+                return ["error", token[0], token[1]]
+                continue
 
-            new_data.append(("undefined", _))
+            # new_data.append(("undefined", _))
 
             # print(new_data)
 
