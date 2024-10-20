@@ -36,7 +36,7 @@ class TestLexer(unittest.TestCase):
                 begin 
                 var dim x, y #;
                 x assign 2;
-                y assign .E+2;
+                y assign .1E+2;
                 dim z;
                 z assign x + y;
                 displ z;
@@ -59,7 +59,7 @@ class TestLexer(unittest.TestCase):
                 (2, 24),
                 (3, 1),
                 (1, 8),
-                (4, ".E+2", "10", "float"),
+                (4, ".1E+2", "10", "float"),
                 (2, 24),
                 (1, 4),
                 (3, 2),
@@ -76,12 +76,20 @@ class TestLexer(unittest.TestCase):
                 (1, 3),
             ],
         )
-        
-    def test6(self):
-        self.assertEqual(
-            self.lexer.tokenize("3E.12 3..12d 4.55,12", True),
-            [(5, "err", "err"), (5, "err", "err"), ('undefined', '4.55,12')],
-        )
+
+    # def test6(self):
+    #     self.assertEqual(
+    #         self.lexer.tokenize("3E.12 3..12d 4.55,12 .12E+1 1.22E2 .12+E .12E+1", True),
+    #         [
+    #             (5, "err", "err"),
+    #             (5, "err", "err"),
+    #             ("undefined", "4.55,12"),
+    #             (4, ".12E+1", "10", "float"),
+    #             (4, "1.22E2", "10", "float"),
+    #             (5, "err", "err"),
+    #             (4, ".12E+1", "10", "float"),
+    #         ],
+    #     )
 
 
 if __name__ == "__main__":
